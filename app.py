@@ -22,13 +22,28 @@ def verify_password(username, password):
 
 
 
+@app.route(
+    "/installible-images",
+    methods = ["GET"]
+    )
+def installibleImages():
+    ""
+    #TODO: burada "multipass find --format json" seklinde ciktilar verilecek
 
 
 
+@app.route(
+    rule="/create-instance",
+    methods = ["GET","POST"]
+    )
+def createInstance():
 
 
-
-
+@app.route(rule="/instances",
+           methods = ["GET"]
+           )
+def instances():
+    #TODO burada "multipass list" komutu calisacak ve gelen body return edilecek
 
 
 @app.route("/about/<uri:str>", methods=["GET"])

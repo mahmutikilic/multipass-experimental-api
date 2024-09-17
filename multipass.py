@@ -47,6 +47,14 @@ def instacenaming():
                         .haikunate(
                     token_length=4
                 ))
+    elif Config.INST_USE_SPEC_CHAR != 1 or \
+        Config.INST_USE_SPEC_CHAR != 0:
+        logging.error("mea.ini/USE_SPEC_CHAR value is not set correctly! continue with default value (0)")
+        return (Haikunator().
+        haikunate(
+            token_length=0
+        ))
+
 
 
 
