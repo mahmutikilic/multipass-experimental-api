@@ -1,0 +1,12 @@
+- loglar için ayarlama yap
+- işletim sisteminden disk durumunu yük durumunu alabilecek parametreleri al
+- - işletim sistemi adı
+- - RAM
+- - Disk
+- - CPU
+- - user
+- - program pwd
+
+konfig dosyası var mı bar ---
+multipass var mı bak ---
+
