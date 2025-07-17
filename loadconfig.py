@@ -1,80 +1,50 @@
 import configparser
-import logging
-from dotenv import dotenv_values,load_dotenv
+from dotenv import dotenv_values, load_dotenv
 
 
 class Config:
-    def __init__(self):
-        try:
-            self.conffile = configparser.ConfigParser()
-            logging.info("Reading ./config/mea.ini file")
-            self.confcache = self.conffile.read('./config/mea.ini')
-            # server
-            self.SERVER_PORT = self.confcache["SERVER"]["PORT"]
-            self.SERVER_HOST = self.confcache["SERVER"]["HOST"]
-            self.SERVER_DEBUG = self.confcache["SERVER"]["DEBUG"]
-            self.SERVER_SECRET_KEY = self.confcache["SERVER"]["SECRET_KEY"]
-            # instance
-            self.INST_NAMING = self.confcache["INSTANCES"]["NAMING"]
-            self.INST_CUSTOM_NAME = self.confcache["INSTANCES"]["NAMING"]
-            self.INST_RANDOM_NUMBER = self.confcache["INSTANCES"]["RANDOM_NUMBER"]
-            self.INST_USE_SPEC_CHAR = self.confcache["INSTANCES"]["USE_SPEC_CHAR"]
-            self.INST_SPEC_CHAR = self.confcache["INSTANCES"]["SPEC_CHAR"]
-            # logging
-            self.LOGGING_LEVEL = self.confcache["LOGGING"]["LOG_LEVEL"]
-            self.LOGGING_FILE = self.confcache["LOGGING"]["LOG_FILE"]
-            # default creating instance setting
-            self.DEF_CPU_COUNT = self.confcache["DEFAULT"]["CPU_COUNT"]
-            self.DEF_DISK_SIZE = self.confcache["DEFAULT"]["DISK_SIZE"]
-            self.DEF_MEM_SIZE = self.confcache["DEFAULT"]["MEM_SIZE"]
-            self.DEF_BASE_IMAGE = self.confcache["DEFAULT"]["BASE_IMAGE"]
-            self.DEF_CLOUD_INIT = self.confcache["DEFAULT"]["CLOUD_INIT"]
-        except configparser.Error as error:
-            logging.error(error)
-        except configparser.NoSectionError as sectionerror:
-            logging.error(sectionerror)
-        except configparser.ParsingError as parsingerror:
-            logging.error(parsingerror)
-        finally:
-            if self.confcache is None:
-                logging.info('Config file load.')
-            else:
-                logging.error("something gone wrong!")
+    def __init__(self, path="config/mea.ini"):
+        self.parser = configparser.ConfigParser()
+        self.parser.read(path)
 
-    def checkEmpty(self):
-        if not all([
-            self.SERVER_HOST,
-            self.SERVER_PORT,
-            self.SERVER_DEBUG,
-            self.SERVER_SECRET_KEY,
-            self.INST_NAMING,
-            self.INST_CUSTOM_NAME,
-            self.INST_RANDOM_NUMBER,
-            self.INST_USE_SPEC_CHAR,
-            self.INST_SPEC_CHAR,
-            self.LOGGING_LEVEL,
-            self.LOGGING_FILE,
-            self.DEF_CPU_COUNT,
-            self.DEF_DISK_SIZE,
-            self.DEF_MEM_SIZE,
-            self.DEF_BASE_IMAGE,
-            self.DEF_CLOUD_INIT
-             ]):
-            raise ValueError('Some values are empty!')
-        else:
-            return True
+        srv = self.parser["SERVER"]
+        inst = self.parser["INSTANCES"]
+        log = self.parser["LOGGING"]
+        default = self.parser["DEFAULT"]
+
+        self.SERVER_PORT = srv.getint("PORT")
+        self.SERVER_HOST = srv.get("HOST")
+        self.SERVER_DEBUG = srv.getboolean("DEBUG")
+        self.SERVER_SECRET_KEY = srv.get("SECRET_KEY")
+
+        self.INST_NAMING = inst.getint("NAMING")
+        self.INST_CUSTOM_NAME = inst.get("CUSTOM_NAME")
+        self.INST_RANDOM_NUMBER = inst.getint("RANDOM_NUMBER")
+        self.INST_USE_SPEC_CHAR = inst.getint("USE_SPEC_CHAR")
+        self.INST_SPEC_CHAR = inst.get("SPEC_CHAR")
+
+        self.LOG_LEVEL = log.get("LOG_LEVEL")
+        self.LOG_FILE = log.get("LOG_FILE")
+
+        self.DEF_CPU_COUNT = default.getint("CPU_COUNT")
+        self.DEF_DISK_SIZE = default.get("DISK_SIZE")
+        self.DEF_MEM_SIZE = default.get("MEM_SIZE")
+        self.DEF_BASE_IMAGE = default.get("BASE_IMAGE")
+        self.DEF_CLOUD_INIT = default.get("CLOUD_INIT")
+
+    def check_empty(self):
+        for section in self.parser.sections():
+            for key, value in self.parser[section].items():
+                if value == "":
+                    raise ValueError(f"{key} is empty")
+        return True
+
 
 class Dotenv:
-    def __init__(self):
-        try:
-            self.isLoadDotEnv=load_dotenv(".env")
-            logging.info("Load env file successfully")
-            self.envfile = dotenv_values(".env")
-        except Exception as error:
-            logging.error(error)
-            logging.error("Start failed! The .env file could not be loaded!")
-            exit()
+    def __init__(self, path=".env"):
+        load_dotenv(path)
+        self.envfile = dotenv_values(path)
+
     def appversion(self):
-        return {
-            "multipass_version": self.envfile["API_VERSION"]
-        }
+        return {"multipass_version": self.envfile.get("API_VERSION", "")}
+
