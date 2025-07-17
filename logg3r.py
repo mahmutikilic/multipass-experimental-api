@@ -1,16 +1,22 @@
 import logging
-import loadconfig
+from loadconfig import Config
 
 FORMAT = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 
-def log_level(lv):
-    if lv==1:
-        return logging.NOTSET
-    elif lv==0:
-        return logging.INFO
+CONF = Config()
 
-logging.basicConfig(format=FORMAT,
-                    style = "{",
-                    filemode = "a",
-                    level=log_level(loadconfig.Config.LOGGING_LEVEL),
-                    filename=loadconfig.Config.LOGGING_FILE)
+LEVELS = {
+    '0': logging.INFO,
+    '1': logging.DEBUG
+}
+
+
+def setup_logging():
+    level = LEVELS.get(str(CONF.LOG_LEVEL), logging.INFO)
+    logging.basicConfig(
+        format=FORMAT,
+        filemode='a',
+        level=level,
+        filename=CONF.LOG_FILE
+    )
+    return logging.getLogger(__name__)

@@ -1,45 +1,23 @@
-### Multipass details
-#### Preload methods
-- check is multipass being
-- check multipass version
-- check is multipass is running
-- check multipass access with python script
+# Features
 
+## Multipass Details
+- Check if Multipass is installed
+- Get Multipass version
+- Verify Multipass is running
+- Access Multipass commands from Python
 
-### Multipass companents 
-#### Endpoints proccess
-- Check node count 
-  - Active
-  - Shutdown
-  - Suspended
-- Check Node names
-  - Active, shutdown and suspended 
-- Check networks
-  - count
-  - Names
-  - Types
-- Check volumes
-- Find installiable images
-  - Images
-  - BluePrint
-- 
+## API Endpoints
+- Query node count and state
+- List node names
+- List networks and volumes
+- Retrieve installable images
 
-
-### Functions
-
-- Run command any instances
-- Delete snaps
+## Management Functions
+- Run commands on instances
+- Delete snapshots
 - Show current status
-- Restart instances
-- Launch instances
--  
+- Restart or launch instances
 
-
-### Pro Functions
-
-- instance load status
-- Set configuration
-
-### Naming Produse
-
-- 1- 
+## Advanced Functions
+- Query instance load status
+- Update configuration
