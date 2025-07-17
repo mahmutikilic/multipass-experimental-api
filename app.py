@@ -1,13 +1,16 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from load_credentials import Users
 from os_info import OSInfo
 from loadconfig import Config, Dotenv
 from multipass import list_instances, find_images, launch_instance, get_version
+from prepare import SignalSum
 import logg3r
 
 app = FastAPI(title="Multipass Experimental API")
+app.mount("/ui", StaticFiles(directory="static", html=True), name="ui")
 
 logger = logg3r.setup_logging()
 config = Config()
@@ -53,6 +56,16 @@ async def instances():
     except Exception as exc:
         logger.error(exc)
         raise HTTPException(status_code=500, detail=str(exc))
+
+
+@app.get("/status")
+async def status():
+    """Return basic system checks useful before operations."""
+    summary = SignalSum()
+    return {
+        "ready": bool(summary),
+        "details": summary.multipass_ok(),
+    }
 
 
 @app.get("/about/{uri}")
