@@ -1,5 +1,6 @@
-Flask==3.0.3
-Flask-RESTful==0.3.10
+fastapi==0.110.0
+uvicorn==0.29.0
+Werkzeug==3.0.1
 psutil==5.9.8
 python-dotenv==1.0.1
 haikunator==2.1.0

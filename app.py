@@ -1,5 +1,5 @@
-from flask import Flask, request, jsonify
-from flask_restful import Api
+from fastapi import FastAPI, HTTPException
+from pydantic import BaseModel
 
 from load_credentials import Users
 from os_info import OSInfo
@@ -7,69 +7,81 @@ from loadconfig import Config, Dotenv
 from multipass import list_instances, find_images, launch_instance, get_version
 import logg3r
 
-app = Flask(__name__)
-api = Api(app)
+app = FastAPI(title="Multipass Experimental API")
 
 logger = logg3r.setup_logging()
 config = Config()
 users = Users()
 
 
-@app.route("/installable-images", methods=["GET"])
-def installable_images():
+class InstanceConfig(BaseModel):
+    name: str | None = None
+    cpu: int | None = None
+    disk: str | None = None
+    mem: str | None = None
+    image: str | None = None
+
+
+@app.get("/")
+async def root():
+    return {"message": "Multipass API running"}
+
+
+@app.get("/installable-images")
+async def installable_images():
     try:
-        return jsonify(find_images())
+        return find_images()
     except Exception as exc:
         logger.error(exc)
-        return jsonify({"error": str(exc)}), 500
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.route("/create-instance", methods=["POST"])
-def create_instance():
-    data = request.json or {}
-    name = data.get("name")
-    cpu = data.get("cpu")
-    disk = data.get("disk")
-    mem = data.get("mem")
-    image = data.get("image")
+@app.post("/create-instance")
+async def create_instance(cfg: InstanceConfig):
     try:
-        new_name = launch_instance(name, cpu, disk, mem, image)
-        return jsonify({"name": new_name})
+        new_name = launch_instance(cfg.name, cfg.cpu, cfg.disk, cfg.mem, cfg.image)
+        return {"name": new_name}
     except Exception as exc:
         logger.error(exc)
-        return jsonify({"error": str(exc)}), 500
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.route("/instances", methods=["GET"])
-def instances():
+@app.get("/instances")
+async def instances():
     try:
-        return jsonify(list_instances())
+        return list_instances()
     except Exception as exc:
         logger.error(exc)
-        return jsonify({"error": str(exc)}), 500
+        raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.route("/about/<string:uri>", methods=["GET"])
-def about(uri):
+@app.get("/about/{uri}")
+async def about(uri: str):
     info = OSInfo()
     if uri == "machine-info":
-        return jsonify(info.commoninfo)
+        return info.commoninfo
     if uri == "multipass-status":
         try:
             ver = get_version()
-            return jsonify({"multipass": ver})
+            return {"multipass": ver}
         except Exception:
-            return jsonify({"multipass": "not available"}), 503
+            raise HTTPException(status_code=503, detail="multipass not available")
     if uri == "multipass-version":
         try:
-            return jsonify({"version": get_version()})
+            return {"version": get_version()}
         except Exception as exc:
-            return jsonify({"error": str(exc)}), 500
+            raise HTTPException(status_code=500, detail=str(exc))
     if uri == "appversion":
-        return jsonify(Dotenv().appversion())
-    return jsonify({"error": "unknown"}), 404
+        return Dotenv().appversion()
+    raise HTTPException(status_code=404, detail="unknown")
 
 
 if __name__ == "__main__":
     logger.info("Starting server")
-    app.run(debug=config.SERVER_DEBUG, host=config.SERVER_HOST, port=config.SERVER_PORT)
+    import uvicorn
+    uvicorn.run(
+        "app:app",
+        host=config.SERVER_HOST,
+        port=config.SERVER_PORT,
+        reload=config.SERVER_DEBUG,
+    )
