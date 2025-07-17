@@ -1,8 +1,9 @@
 # multipass-experimental-api
 
 This project exposes a simple REST API to manage [Multipass](https://multipass.run/) instances.
-The server is implemented with **FastAPI**, providing both the backend logic and a minimal
-web interface from a single application.
+It is built with **FastAPI** and Python 3.10 as an experimental attempt to manage
+Multipass from a single application providing both backend logic and a minimal web
+interface.
 
 Run the development server with:
 
