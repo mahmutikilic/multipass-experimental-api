@@ -1,6 +1,11 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, APIRouter
 from fastapi.staticfiles import StaticFiles
+from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from pydantic import BaseModel
+from datetime import datetime, timedelta
+from jose import JWTError, jwt
+import redis.asyncio as redis
+from werkzeug.security import check_password_hash
 
 from load_credentials import Users
 from os_info import OSInfo
@@ -16,6 +21,16 @@ logger = logg3r.setup_logging()
 config = Config()
 users = Users()
 
+redis_client = redis.Redis(host=config.REDIS_HOST, port=config.REDIS_PORT, db=config.REDIS_DB, decode_responses=True)
+
+SECRET_KEY = config.SERVER_SECRET_KEY
+ALGORITHM = "HS256"
+ACCESS_TOKEN_EXPIRE_MINUTES = 60
+
+oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/v1/api/login")
+
+api = APIRouter(prefix="/v1/api")
+
 
 class InstanceConfig(BaseModel):
     name: str | None = None
@@ -25,13 +40,52 @@ class InstanceConfig(BaseModel):
     image: str | None = None
 
 
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+
+
+def create_access_token(data: dict, expires_delta: int = ACCESS_TOKEN_EXPIRE_MINUTES):
+    to_encode = data.copy()
+    expire = datetime.utcnow() + timedelta(minutes=expires_delta)
+    to_encode.update({"exp": expire})
+    return jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
+
+
+async def get_current_user(token: str = Depends(oauth2_scheme)):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        username: str = payload.get("sub")
+        if username is None:
+            raise HTTPException(status_code=401, detail="Invalid token")
+        exists = await redis_client.exists(f"auth_token:{token}")
+        if not exists:
+            raise HTTPException(status_code=401, detail="Token expired")
+        return username
+    except JWTError:
+        raise HTTPException(status_code=401, detail="Invalid token")
+
+
 @app.get("/")
 async def root():
     return {"message": "Multipass API running"}
 
+app.include_router(api)
 
-@app.get("/installable-images")
-async def installable_images():
+
+@api.post("/login", response_model=Token)
+async def login(form_data: OAuth2PasswordRequestForm = Depends()):
+    creds = users.credentials()
+    hashed = creds.get(form_data.username)
+    if not hashed or not check_password_hash(hashed, form_data.password):
+        raise HTTPException(status_code=400, detail="Invalid credentials")
+    token = create_access_token({"sub": form_data.username})
+    await redis_client.setex(f"auth_token:{token}", ACCESS_TOKEN_EXPIRE_MINUTES * 60, form_data.username)
+    return {"access_token": token, "token_type": "bearer"}
+
+
+@api.get("/installable-images")
+async def installable_images(current_user: str = Depends(get_current_user)):
     try:
         return find_images()
     except Exception as exc:
@@ -39,8 +93,8 @@ async def installable_images():
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.post("/create-instance")
-async def create_instance(cfg: InstanceConfig):
+@api.post("/create-instance")
+async def create_instance(cfg: InstanceConfig, current_user: str = Depends(get_current_user)):
     try:
         new_name = launch_instance(cfg.name, cfg.cpu, cfg.disk, cfg.mem, cfg.image)
         return {"name": new_name}
@@ -49,8 +103,8 @@ async def create_instance(cfg: InstanceConfig):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.get("/instances")
-async def instances():
+@api.get("/instances")
+async def instances(current_user: str = Depends(get_current_user)):
     try:
         return list_instances()
     except Exception as exc:
@@ -58,8 +112,8 @@ async def instances():
         raise HTTPException(status_code=500, detail=str(exc))
 
 
-@app.get("/status")
-async def status():
+@api.get("/status")
+async def status(current_user: str = Depends(get_current_user)):
     """Return basic system checks useful before operations."""
     summary = SignalSum()
     return {
@@ -68,8 +122,8 @@ async def status():
     }
 
 
-@app.get("/about/{uri}")
-async def about(uri: str):
+@api.get("/about/{uri}")
+async def about(uri: str, current_user: str = Depends(get_current_user)):
     info = OSInfo()
     if uri == "machine-info":
         return info.commoninfo

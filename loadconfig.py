@@ -11,6 +11,8 @@ class Config:
         inst = self.parser["INSTANCES"]
         log = self.parser["LOGGING"]
         default = self.parser["DEFAULT"]
+        redis = self.parser["REDIS"] if "REDIS" in self.parser else {}
+        database = self.parser["DATABASE"] if "DATABASE" in self.parser else {}
 
         self.SERVER_PORT = srv.getint("PORT")
         self.SERVER_HOST = srv.get("HOST")
@@ -31,6 +33,13 @@ class Config:
         self.DEF_MEM_SIZE = default.get("MEM_SIZE")
         self.DEF_BASE_IMAGE = default.get("BASE_IMAGE")
         self.DEF_CLOUD_INIT = default.get("CLOUD_INIT")
+
+        # optional sections
+        self.REDIS_HOST = redis.get("HOST", "localhost")
+        self.REDIS_PORT = int(redis.get("PORT", 6379))
+        self.REDIS_DB = int(redis.get("DB", 0))
+
+        self.DB_URL = database.get("URL", "")
 
     def check_empty(self):
         for section in self.parser.sections():

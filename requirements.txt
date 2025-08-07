@@ -4,3 +4,6 @@ Werkzeug==3.0.1
 psutil==5.9.8
 python-dotenv==1.0.1
 haikunator==2.1.0
+python-jose==3.3.0
+passlib[bcrypt]==1.7.4
+redis==5.0.1
