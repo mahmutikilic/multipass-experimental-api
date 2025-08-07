@@ -22,6 +22,8 @@ uvicorn app.main:app --reload
 The API is available under `/v1/users` while the static UI can be viewed
 at `http://<host>:<port>/ui`.
 
+A basic health check is exposed at `/status`.
+
 ## Configuration
 
 The application reads the `DATABASE_URL` environment variable to connect

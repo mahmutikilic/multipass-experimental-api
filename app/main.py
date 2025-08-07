@@ -15,6 +15,12 @@ static_dir = Path(__file__).resolve().parent.parent / "static"
 app.mount("/ui", StaticFiles(directory=static_dir, html=True), name="ui")
 
 
+@app.get("/status")
+def status_check():
+    """Simple health check endpoint."""
+    return {"status": "ok"}
+
+
 def get_db():
     db = SessionLocal()
     try:
