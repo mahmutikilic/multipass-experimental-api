@@ -1,26 +1,32 @@
 # multipass-experimental-api
 
-This project exposes a simple REST API to manage [Multipass](https://multipass.run/) instances.
-It is built with **FastAPI** and Python 3.11, providing both backend logic and a minimal web
-interface from a single application. All API endpoints are served under `/v1/api` and are
-protected with JWT authentication backed by Redis.
+This repository contains a FastAPI application organised with a modern,
+ORM-based architecture using SQLAlchemy. The project exposes a simple
+user management API and serves a static HTML interface from the same
+server.
 
-Run the development server with:
+## Getting started
 
-```bash
-python app.py
-```
-
-or by calling `uvicorn` directly.
-
-The UI is available at `http://<host>:<port>/ui` after starting the server.
-
-### Docker services
-
-A small `docker-compose.yml` file is included to run PostgreSQL and Redis for development:
+Install dependencies:
 
 ```bash
-docker compose up -d
+pip install -r requirements.txt
 ```
 
-The application itself does not run in Docker but expects these services when authentication is enabled.
+Run the development server:
+
+```bash
+uvicorn app.main:app --reload
+```
+
+The API is available under `/v1/users` while the static UI can be viewed
+at `http://<host>:<port>/ui`.
+
+## Configuration
+
+The application reads the `DATABASE_URL` environment variable to connect
+to a database. If it is not set, a local SQLite database (`app.db`) is
+used.
+
+A `docker-compose.yml` file is provided for optionally running PostgreSQL
+and Redis services during development.
